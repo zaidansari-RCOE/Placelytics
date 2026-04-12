@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+        <h2 class="fw-bold text-purple">In-Depth Placement Records</h2>
+        <p class="text-muted">Complete database of all student placements</p>
+    </div>
+    <div class="col-md-4">
+        <input type="text" id="searchInput" class="form-control border-purple" placeholder="Search by name, company, or status..." onkeyup="filterTable()">
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0" id="dataTable">
+                <thead class="bg-dark text-white">
+                    <tr>
+                        <th class="py-3 px-4">Student Name</th>
+                        <th class="py-3 px-4">Company</th>
+                        <th class="py-3 px-4">Package (LPA)</th>
+                        <th class="py-3 px-4">Status</th>
+                        <th class="py-3 px-4">Batch Year</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in records %}
+                    <tr>
+                        <td class="px-4 fw-bold">{{ row['Student_Name'] }}</td>
+                        <td class="px-4">{{ row['Company'] }}</td>
+                        <td class="px-4 text-success fw-bold">
+                            {% if row['Salary'] > 0 %}₹{{ row['Salary'] }}{% else %}-{% endif %}
+                        </td>
+                        <td class="px-4">
+                            {% if row['Status'] == 'Placed' %}
+                                <span class="badge bg-success">Placed</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Not Placed</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4">{{ row['Year'] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterTable() {
+    let input = document.getElementById("searchInput").value.toUpperCase();
+    let table = document.getElementById("dataTable");
+    let tr = table.getElementsByTagName("tr");
+
+    // Loop through all table rows (except the header)
+    for (let i = 1; i < tr.length; i++) {
+        let rowText = tr[i].textContent || tr[i].innerText;
+        if (rowText.toUpperCase().indexOf(input) > -1) {
+            tr[i].style.display = "";
+        } else {
+            tr[i].style.display = "none";
+        }
+    }
+}
+</script>
+{% endblock %}

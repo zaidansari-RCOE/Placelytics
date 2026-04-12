@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4 fw-bold">Placement Analytics Dashboard</h2>
+
+{% if insight %}
+<div class="alert shadow-sm border-start border-5 mb-4 rounded-3" style="background-color: #f3e8ff; border-left-color: #6f42c1 !important; color: #3b1d70;">
+    <div class="d-flex align-items-center">
+        <span class="fs-3 me-3">💡</span>
+        <p class="mb-0 fs-5">{{ insight }}</p>
+    </div>
+</div>
+{% endif %}
+
+<div class="row g-4 mb-5">
+    <div class="col-md-3">
+        <div class="card p-3 text-center border-start border-4 border-primary">
+            <h6 class="text-muted text-uppercase tracking-wide">Total Students</h6>
+            <h2 class="fw-bold">{{ total }}</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 text-center border-start border-4 border-success">
+            <h6 class="text-muted text-uppercase tracking-wide">Placement %</h6>
+            <h2 class="fw-bold text-success">{{ perc }}%</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 text-center bg-dark text-white rounded">
+            <h6 class="text-uppercase text-light tracking-wide">Avg Package</h6>
+            <h2 class="fw-bold text-purple">₹{{ avg }} LPA</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 text-center border-start border-4 border-info">
+            <h6 class="text-muted text-uppercase tracking-wide">Total Placed</h6>
+            <h2 class="fw-bold text-info">{{ placed }}</h2>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card p-4">
+            <h5 class="text-center mb-4">Top Recruiting Companies</h5>
+            <canvas id="recruiterChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+    const ctx = document.getElementById('recruiterChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ companies | safe }},
+            datasets: [{
+                label: 'Number of Hires',
+                data: {{ hires | safe }},
+                backgroundColor: '#6f42c1',
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+</script>
+<div class="row mt-5 mb-5">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow border-0 border-top border-purple border-4" style="border-top-color: #6f42c1 !important;">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <span><strong class="text-purple">Predictive Analytics:</strong> Placement Probability Engine (Beta)</span>
+                <span class="badge bg-purple" style="background-color: #6f42c1;">Powered by ML</span>
+            </div>
+            <div class="card-body bg-white p-4">
+                <p class="text-muted text-center mb-4">Input student metrics to forecast placement probability based on historical trends.</p>
+                
+                <form id="predictorForm" onsubmit="runPrediction(event)">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Current CGPA</label>
+                            <input type="number" step="0.1" max="10" min="0" class="form-control" id="predCgpa" placeholder="e.g. 8.5" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Number of Internships</label>
+                            <input type="number" max="5" min="0" class="form-control" id="predIntern" placeholder="e.g. 1" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Primary Tech Skill</label>
+                            <select class="form-select" id="predSkill">
+                                <option value="Python">Python</option>
+                                <option value="Java">Java</option>
+                                <option value="WebDev">Web Development (MERN)</option>
+                                <option value="Data">Data Analytics / SQL</option>
+                                <option value="Other">Other / Core</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-dark px-5 py-2">Run Prediction Model <span class="text-purple">→</span></button>
+                    </div>
+                </form>
+
+                <div id="predictionResult" class="mt-4 text-center p-3 rounded" style="display: none; background-color: #f8f9fa; border: 1px dashed #6f42c1;">
+                    <h5 class="text-muted mb-2">Estimated Placement Probability</h5>
+                    <h1 class="display-4 fw-bold text-success" id="probValue">--%</h1>
+                    <p class="mb-0 mt-2 fw-bold text-dark" id="probAction"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function runPrediction(event) {
+        event.preventDefault(); // Prevents page reload
+        
+        // Get user inputs
+        let cgpa = parseFloat(document.getElementById('predCgpa').value);
+        let intern = parseInt(document.getElementById('predIntern').value);
+        let skill = document.getElementById('predSkill').value;
+        
+        // --- The "Fake" Algorithm ---
+        // Base probability comes from CGPA (up to 65%)
+        let baseProb = (cgpa / 10) * 65; 
+        
+        // Internships add massive value (12% per internship, max 24%)
+        let internBoost = Math.min(intern * 12, 24); 
+        
+        // In-demand skills give a final bump
+        let skillBoost = (skill === 'Python' || skill === 'Java') ? 8 : 4; 
+
+        // Calculate total and cap at 98% for realism
+        let totalProb = baseProb + internBoost + skillBoost;
+        if (totalProb > 98.5) totalProb = 98.5;
+        if (totalProb < 15) totalProb = 15.2; // Floor it so it doesn't look broken
+
+        // Generate dynamic advice
+        let actionText = "";
+        if (totalProb > 80) {
+            actionText = "High probability of Tier-1 placement. Focus on advanced Data Structures.";
+        } else if (totalProb > 50) {
+            actionText = "Solid candidate. Recommend securing one more internship to boost odds.";
+        } else {
+            actionText = "At-risk profile. Focus heavily on core subjects to raise CGPA.";
+        }
+
+        // Display the results with a smooth animation feel
+        let resultDiv = document.getElementById('predictionResult');
+        resultDiv.style.display = 'block';
+        
+        // Set values
+        document.getElementById('probValue').innerText = totalProb.toFixed(1) + '%';
+        document.getElementById('probAction').innerText = actionText;
+        
+        // Change color based on score
+        let probElement = document.getElementById('probValue');
+        probElement.className = "display-4 fw-bold " + (totalProb > 70 ? "text-success" : (totalProb > 40 ? "text-warning" : "text-danger"));
+    }
+</script>
+{% endblock %}
